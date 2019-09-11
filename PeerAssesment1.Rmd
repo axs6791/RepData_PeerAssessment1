@@ -90,78 +90,7 @@ One can see in the time series, that there is a clear peak. The time interval an
 steps_by_interval[which.max(steps_by_interval$mean),]
 ```
 ## Imputing missing values
-The presense of missing values in the dataset may be a cause of bias in the measuments. In this data set, there are many intervals for which we have no step data.
-```{r, echo=TRUE, message=FALSE}
-missing_steps<-sum(is.na(activity_data$steps))
-missing_steps
-```
-To reduce this bias, we will replace the missing value of steps for average steps for that day. In the cases where there is no data for the whole day, we will replace with 0.
-```{r, echo=TRUE, message=FALSE}
-filled_data <- activity_data
-for (row in 1:nrow(filled_data)) {
-   if(is.na(filled_data[row, "steps"])) {
-       mydate<-filled_data[row,"date"]
-       day_mean<-steps_data[steps_data$date==mydate,]$mean
-       # handle case in which there is no data for the day.
-       if(length(day_mean)==0){
-           filled_data[row,"steps"]<-0
-           next
-       }
-       filled_data[row,"steps"]<-day_mean
-   }
-}
-```
-Finally, we want to see what the histogram of the filled data looks like.
-```{r, echo=TRUE, message=FALSE}
-# Just keep the date and step data, remove NAs and group by date.
-steps_grouped_by_date <- filled_data %>%
-    select(date, steps) %>%
-    group_by(date)
 
-# Compute the number of total steps per day
-filled_data <- steps_grouped_by_date %>%
-    summarise(count=sum(steps))
 
-# Compute the number of average of steps per day
-# and add it to the dataframe
-tmp <- steps_grouped_by_date %>%
-    summarise(mean=mean(steps))
-filled_data$mean <- tmp$mean
-
-gg <- ggplot(filled_data, aes(x=date, y=count)) 
-p1 <- gg + geom_bar(stat="identity", fill="steelblue") +
-    ggtitle("Total Steps per Day") + 
-    theme(axis.title.x = element_blank(),
-          axis.title.y = element_blank())
-p2 <- gg + geom_line(inherit.aes = FALSE, aes(x=date, y=mean), 
-                     color="steelblue") + 
-    ggtitle("Mean Steps per Day") + 
-    theme(axis.title.x = element_blank(),
-          axis.title.y = element_blank())
-
-grid.arrange(p1,p2,nrow=1, left="Steps", bottom="Date")
-```
-Looking now at the summary for the filled data:
-```{r echo=TRUE}
-summary(filled_data$count)
-```
 
 ## Are there differences in activity patterns between weekdays and weekends?
-First we add a new column to our dataset indicating whether the date is a weekday or a weekend.
-
-```{r, echo=TRUE, message=FALSE}
-activity_data$date_type<-weekdays(activity_data$date)
-activity_data$date_type<-sapply(activity_data$date_type, function(x) 
-    if(x=="Saturday" || x=="Sunday") {"Weekend"}
-    else {"Weekday"}
-)
-activity_data$date_type<-as.factor(activity_data$date_type)
-steps_by_date_type <- activity_data %>%
-    filter(!is.na(steps)) %>%
-    select(date_type, interval, steps) %>%
-    group_by(date_type, interval) %>%
-    summarize_all(mean)
-
-p <- ggplot(steps_by_date_type, aes(interval, steps)) + 
-    geom_line(color="steelblue")
-p + facet_grid(rows=vars(date_type))
