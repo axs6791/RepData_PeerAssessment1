@@ -4,6 +4,7 @@ output:
   html_document:
     keep_md: true
     theme: darkly
+    self_contained: false
 ---
 
 ## Loading and preprocessing the data
